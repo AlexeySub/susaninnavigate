@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Работа с данными и событиями модели мультимаршрута</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <script src="jquery.js" type="text/javascript"></script>
+  <script src="push.js" type="text/javascript"></script>
+
+  <link rel="stylesheet" type="text/css" href="styles.css">
+     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&amp;apikey=07d4153d-fb75-46bc-877a-a5b781b6a6c0" type="text/javascript"></script>
+    <script src="custom_view.js" type="text/javascript"></script>
+    <script src="byLex.js" type="text/javascript"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<!--    <script src="yandex.js" type="text/javascript"></script> -->
+</head>
+
+<body>
+    <div id="map"></div>
+    <div id="viewContainer"></div>
+    
+
+<div class="container">
+  <div class="col-md-12">
+    <div class="row-md-3 mt-3">
+          <input type="text" style="width: 100%" value="" id="txt">
+          <div class="row-md-3">
+                    <button type="button" class="btn btn-info mt-3" style="width: 100%" onclick="someFunc()">Подтвердить ввод</button>
+    </div>
+    <div class="row-md-3">
+          <button type="button" class="btn btn-info mt-3" style="width: 100%" onclick="speech ()">Слушать</button>
+    </div>
+  </div>
+</div>
+</div>
+
+
+  <script>
+
+   var recognizer = new webkitSpeechRecognition();
+
+  // Ставим опцию, чтобы распознавание началось ещё до того, как пользователь закончит говорить
+  recognizer.interimResults = true;
+
+  // Какой язык будем распознавать?
+  recognizer.lang = 'ru-Ru';
+
+  function command(text) {
+    arr = text.split(' ');
+    return arr;
+  }
+  var adress = '';
+  // Используем колбек для обработки результатов
+  recognizer.onresult = function (event) {
+    var result = event.results[event.resultIndex];
+    if (result.isFinal) {           // если закончили говорить
+      res = result[0].transcript;   // строка, которую сказали
+      alert('Вы сказали: ' + res);
+      res = command(res)            // получили массив слов
+
+//      var startindex = 0;           // индекс команды поиска маршрута
+//      var wayindex = 0;             // индекс команды в пути
+//      var finalindex = 0;           // индекс команды напомни
+      for (var i = 0; i < res.length; i++) {
+        if (res[i] == "Поехали" || res[i] == "поехали") {
+        //  startindex = i;           // нашли индекс начала команды
+          adress = res.slice(i + 2).join(' ');
+          console.log('Adress: ', adress);
+
+          break;
+        }
+        if (res[i] == "пути") {
+          console.log('В пути!');          // нашли индекс начала команды
+          break;
+        }
+        if (res[i] == "напомни" || res[i] == "Напомни") {
+        //  finalindex = i;
+          ostanovka = res.slice(i + 4).join(' ');
+          console.log('Ostanovka: ', ostanovka);
+          axios.post('', bus)
+          break;
+        }
+      }
+//      adress = res.slice(startindex + 2).join(' ');
+//      console.log('Adress: ', adress);
+//      ostanovka = res.slice(finalindex + 4).join(' ');
+//      console.log('Ostanovka: ', ostanovka);
+      ymaps.ready(init);
+      
+      } else {
+      res = result[0].transcript;
+      console.log('Промежуточный результат: ', res);
+    }
+  };
+
+
+
+  function speech () {
+    // Начинаем слушать микрофон и распознавать голос
+    recognizer.start();
+  }
+
+  function init () {
+    // Создаем модель мультимаршрута.
+    var multiRouteModel = new ymaps.multiRouter.MultiRouteModel([
+           [56.2573467892592, 43.8555007018054],
+            adress
+        ]);
+
+    ymaps.modules.require([
+        'MultiRouteCustomView'
+    ], function (MultiRouteCustomView) {
+        // Создаем экземпляр текстового отображения модели мультимаршрута.
+        // см. файл custom_view.js
+        new MultiRouteCustomView(multiRouteModel);
+    });
+
+    multiRouteModel.setParams({ routingMode: 'masstransit' }, true);
+
+
+}
+
+//ymaps.ready(init);
+
+  </script>
+</body>
+
+</html>
